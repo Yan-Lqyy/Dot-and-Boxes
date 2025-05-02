@@ -14,7 +14,7 @@ from ai_mcts import (get_mcts_move, MCTS_ITERATIONS, MCTS_EXPLORATION) # Import 
 
 # --- Shared Default Constants ---
 # Define time limits here if you want them to be easily configurable across search AIs
-DEFAULT_TIME_LIMIT = 2.0 # Shared time limit in seconds
+DEFAULT_TIME_LIMIT = 30.0 # Shared time limit in seconds
 
 # --- Policy Map ---
 # Use lambda functions to pass default parameters (depth, time limit, iterations)
