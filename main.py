@@ -3,7 +3,7 @@
 import game_logic
 import display
 import string
-import time
+import time # Ensure time is imported
 # Import the central AI hub
 import ai_player
 
@@ -62,8 +62,10 @@ def select_player_type(player_num): # ... (implementation as before) ...
                 except ValueError: print("Invalid input.")
         else: print("Invalid choice.")
 
+
 if __name__ == "__main__":
     # --- Game Setup ---
+    # ... (setup code as before) ...
     while True:
         try:
             side_len_str = input("Enter board side length (dots, 4 to 10): ")
@@ -91,62 +93,53 @@ if __name__ == "__main__":
         stop_reason = "N/A" # Default for humans
 
         if player_type == "Human":
-            # Human input function still returns just the move tuple
             move_tuple = get_human_player_input(player, game_state)
-            move = move_tuple # Keep move as the tuple for now
+            move = move_tuple
         elif player_type == "Bot":
             print(f"\nPlayer {player}'s turn (Bot: {policy_name}). Thinking...")
             ai_function = ai_player.POLICY_MAP[policy_name]
             start_think_time = time.monotonic()
-
-            # Get the result dictionary from the AI function
-            ai_result = ai_function(game_state) # Returns {'move': ..., 'stop_reason': ...}
+            ai_result = ai_function(game_state)
             think_time = time.monotonic() - start_think_time
 
-            move = ai_result['move'] # Extract the move tuple
-            stop_reason = ai_result['stop_reason'] # Extract the reason
+            move = ai_result.get('move') # Use .get for safety
+            stop_reason = ai_result.get('stop_reason', 'Unknown')
 
-            time.sleep(0.05) # Very short delay for visibility
+            # No extra sleep here, bot already has think time pause illusion
 
             if move:
                  move_label = f"{move[1]}{_get_col_label(move[2])}" if move[0] == 'h' else f"{_get_col_label(move[2])}{move[1]}"
-                 # *** Display the stop reason ***
                  print(f"Bot chose move: {move_label} ({'Hor' if move[0] == 'h' else 'Ver'})")
                  print(f"Stop Reason: {stop_reason} (Think time: {think_time:.3f}s)")
             else:
                  print(f"Bot policy {policy_name} returned no move. Reason: {stop_reason}")
-                 # Handle game ending or error based on no move returned
-                 if stop_reason == 'No Valid Moves' or stop_reason == 'Game Over':
-                      print("Game appears to be over or stalled.")
-                 else:
-                      print(f"Unexpected error: Bot {policy_name} failed.")
-                 break # Exit game loop if bot fails to provide a move
+                 break # Exit game loop if bot fails
 
         # --- Process the move ---
         if move is None:
-            # Handle cases where input fails or bot returns None move explicitly
             print(f"Error getting move for Player {player} ({player_type}). Stop Reason: {stop_reason}. Skipping turn.")
             if game_logic.is_game_over(game_state): break
-            # Avoid infinite loops if a player consistently fails
-            # Maybe add a counter? For now, just switch.
-            if not game_logic.is_game_over(game_state):
-                game_logic.switch_player(game_state)
+            if not game_logic.is_game_over(game_state): game_logic.switch_player(game_state)
             continue
 
-        # Unpack the move tuple
         line_type, r, c = move
         boxes_completed = game_logic.make_move(game_state, line_type, r, c)
 
         if boxes_completed == -1:
-            # This indicates an invalid move was somehow generated AFTER validation
-            print(f"!!! ERROR: Player {player} ({player_type}) made an invalid move ({move}) that wasn't caught! Skipping turn. !!!")
+            print(f"!!! ERROR: Player {player} ({player_type}) made an invalid move ({move})! Skipping turn. !!!")
             game_logic.switch_player(game_state)
-            continue
+            continue # Skip the pause if the move was invalid
 
         if boxes_completed > 0:
             print(f"Player {player} ({player_type}) completed {boxes_completed} box(es)! Gets another turn.")
         else:
-            game_logic.switch_player(game_state) # Switch player only if no box completed
+            # Switch player only if no box completed and move was valid
+            game_logic.switch_player(game_state)
+
+        # *** ADD PAUSE HERE ***
+        # Pause applies after any valid move, regardless of who played or if they get another turn
+        time.sleep(1)
+        # *** END PAUSE ***
 
     # --- Game End ---
     print("\n================ GAME OVER ================")
