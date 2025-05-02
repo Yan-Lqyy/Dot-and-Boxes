@@ -1,17 +1,25 @@
 # display.py
 """
-Functions for displaying the Dots and Boxes game state in the console
-with row (letters) and column (numbers) labels.
+Functions for displaying the Dots and Boxes game state in the console.
 """
+import string
+
+def _get_col_label(index):
+    """Returns the column label (A, B, ...) for a given index."""
+    if index < 26:
+        return string.ascii_uppercase[index]
+    else:
+        # Handle more than 26 columns if needed, though current limit is 10 dots (J)
+        return "?" # Placeholder for columns beyond Z
 
 def display_board(game_state):
     """
-    Prints a text representation of the current game board state.
+    Prints a text representation of the current game board state with row/col labels.
     'o' represents dots.
     '-' represents horizontal lines.
     '|' represents vertical lines.
     Player number (1 or 2) inside completed boxes.
-    Includes row letters (A, B, C...) and column numbers (1, 2, 3...).
+    Row numbers on the left, Column letters on top.
     """
     rows = game_state['board_rows']
     cols = game_state['board_cols']
@@ -19,52 +27,53 @@ def display_board(game_state):
     v_lines = game_state['vertical_lines']
     box_owners = game_state['box_owners']
 
-    # --- Column Headers ---
-    col_label_padding = "   " # Space for row labels like "A: "
-    header = col_label_padding
+    print("\nBoard State:")
+
+    # --- Print Column Headers ---
+    header = "   " # Space for row numbers
     for c in range(cols):
-        header += f"{c+1:<4}" # Pad to align with 'o---' pattern
+        header += f" {_get_col_label(c)}  "
     print(header)
 
-    # --- Board Rows ---
+    # --- Print Board Rows ---
     for r in range(rows):
-        row_label = f"{chr(ord('A') + r)}: "
-
         # Print dot row (dots and horizontal lines)
-        line1 = row_label
+        line1 = f"{r:<2d} " # Row number, left-aligned in 2 spaces
         for c in range(cols):
-            line1 += "o"
-            if c < cols - 1:
+            line1 += "o" # Print dot
+            if c < cols - 1: # Check if a horizontal line can exist to the right
                 if (r, c) in h_lines:
-                    line1 += "---"
+                    line1 += "---" # Drawn line
                 else:
-                    line1 += "   "
+                    line1 += "   " # Empty space for line
         print(line1)
 
-        # Print vertical lines and box interiors row (if not the last row)
+        # Print vertical lines and box interiors row (if not the last dot row)
         if r < rows - 1:
-            line2 = col_label_padding # Align under column headers
+            line2 = "   " # Space for row numbers
             for c in range(cols):
+                # Check for vertical line below the current dot
                 if (r, c) in v_lines:
-                    line2 += "| "
+                    line2 += "| " # Drawn vertical line
                 else:
-                    line2 += "  "
+                    line2 += "  " # Empty space for vertical line
 
-                # Check for box owner
+                # Check for box owner to the right of the vertical line space
                 if c < cols - 1:
-                    owner = box_owners.get((r, c), 0)
+                    owner = box_owners.get((r, c), 0) # (r,c) is the top-left of the box
                     if owner != 0:
-                        line2 += f"{owner} " # Box owner takes 2 spaces (digit + space)
+                        line2 += f"{owner} " # Show owner (1 or 2)
                     else:
-                        line2 += "  " # Empty box takes 2 spaces
-                # Add trailing space if no vertical line in last column (for alignment)
-                # elif c == cols - 1 and (r,c) not in v_lines:
-                #     line2 += " " # Ensure alignment if last vertical line is missing - rstrip handles this better
+                        line2 += "  " # Empty box interior
+                # Add space if last vertical column has no line, ensuring alignment
+                elif c == cols - 1 and (r, c) not in v_lines:
+                    line2 += " "
 
-            print(line2.rstrip()) # Use rstrip for cleaner output
+            print(line2.rstrip()) # Remove potential trailing space
 
-    print("-" * len(header)) # Separator line matching header width
+    # Optional: Bottom separator line (adjust width)
+    # print("   " + "-" * (cols * 4 - 1))
 
 def display_scores(game_state):
     """Prints the current scores."""
-    print(f"Scores: Player 1: {game_state['scores'][1]} | Player 2: {game_state['scores'][2]}")
+    print(f"\nScores: Player 1: {game_state['scores'][1]} | Player 2: {game_state['scores'][2]}")

@@ -4,35 +4,30 @@ Core logic for the Dots and Boxes game.
 Manages game state, moves, box completion, scoring, and turn management.
 """
 
-def initialize_game(rows, cols):
+def initialize_game(side_length):
     """
-    Initializes the game state.
+    Initializes the game state for a square board.
 
     Args:
-        rows (int): Number of rows of dots.
-        cols (int): Number of columns of dots.
+        side_length (int): Number of dots along one side (must be between 4 and 10).
 
     Returns:
-        dict: A dictionary representing the initial game state, containing:
-            'board_rows': Number of dot rows.
-            'board_cols': Number of dot columns.
-            'horizontal_lines': Set of drawn horizontal lines (r, c).
-            'vertical_lines': Set of drawn vertical lines (r, c).
-            'box_owners': Dictionary mapping box top-left coords (r, c) to owner (1 or 2), or 0 if unowned.
-            'scores': Dictionary mapping player (1 or 2) to score.
-            'current_player': The player whose turn it is (1 or 2).
-            'total_boxes': Total number of possible boxes.
+        dict: A dictionary representing the initial game state.
+        Raises ValueError if side_length is invalid.
     """
-    if rows < 2 or cols < 2:
-        raise ValueError("Board dimensions must be at least 2x2 dots.")
+    if not (4 <= side_length <= 10):
+        raise ValueError("Board side length (number of dots) must be between 4 and 10.")
+
+    rows = side_length
+    cols = side_length
 
     num_boxes_r = rows - 1
     num_boxes_c = cols - 1
     total_boxes = num_boxes_r * num_boxes_c
 
     game_state = {
-        'board_rows': rows,
-        'board_cols': cols,
+        'board_rows': rows, # Number of dot rows
+        'board_cols': cols, # Number of dot columns
         'horizontal_lines': set(), # Stores tuples (r, c) of the top-left dot
         'vertical_lines': set(),   # Stores tuples (r, c) of the top-left dot
         'box_owners': {(r, c): 0 for r in range(num_boxes_r) for c in range(num_boxes_c)}, # 0: no owner, 1: P1, 2: P2
@@ -42,25 +37,41 @@ def initialize_game(rows, cols):
     }
     return game_state
 
-def is_valid_line(game_state, line_type, r, c):
-    """Checks if a line is within bounds and not already taken."""
+def _get_max_indices(game_state):
+    """Helper to get max row/col indices based on line type."""
     rows = game_state['board_rows']
     cols = game_state['board_cols']
+    # Max indices for the *reference dot* of a line
+    max_r_h = rows - 1
+    max_c_h = cols - 2
+    max_r_v = rows - 2
+    max_c_v = cols - 1
+    return max_r_h, max_c_h, max_r_v, max_c_v
+
+
+def is_valid_line(game_state, line_type, r, c):
+    """Checks if a line is within bounds and not already taken."""
+    max_r_h, max_c_h, max_r_v, max_c_v = _get_max_indices(game_state)
 
     if line_type == 'h': # Horizontal
-        # Check bounds
-        if not (0 <= r < rows and 0 <= c < cols - 1):
+        # Check bounds for the reference dot (top-left)
+        if not (0 <= r <= max_r_h and 0 <= c <= max_c_h):
+            # print(f"Debug: H bounds check fail: r={r} (max {max_r_h}), c={c} (max {max_c_h})")
             return False
         # Check if already drawn
         return (r, c) not in game_state['horizontal_lines']
     elif line_type == 'v': # Vertical
-        # Check bounds
-        if not (0 <= r < rows - 1 and 0 <= c < cols):
+        # Check bounds for the reference dot (top-left)
+        if not (0 <= r <= max_r_v and 0 <= c <= max_c_v):
+            # print(f"Debug: V bounds check fail: r={r} (max {max_r_v}), c={c} (max {max_c_v})")
             return False
         # Check if already drawn
         return (r, c) not in game_state['vertical_lines']
     else:
         return False # Invalid line type
+
+# --- check_box_completion, make_move, switch_player, is_game_over, get_winner remain the same ---
+# (You can copy them from the previous version or keep them as they were)
 
 def check_box_completion(game_state, player):
     """
@@ -85,7 +96,7 @@ def check_box_completion(game_state, player):
     for r in range(rows - 1):
         for c in range(cols - 1):
             # Check if this box is already owned
-            if box_owners[(r, c)] == 0:
+            if box_owners.get((r, c), 0) == 0: # Use .get for safety, though initialized
                 # Check if all four sides are present
                 has_top = (r, c) in h_lines
                 has_bottom = (r + 1, c) in h_lines
@@ -112,11 +123,13 @@ def make_move(game_state, line_type, r, c):
         int: Number of boxes completed by this move (0 or more).
              Returns -1 if the move was invalid.
     """
+    # Validity check is now primarily handled by the input parsing,
+    # but we keep this as a safeguard.
     if not is_valid_line(game_state, line_type, r, c):
+        # print(f"Debug: make_move detected invalid line: {line_type}, r={r}, c={c}")
         return -1 # Indicate invalid move
 
     player = game_state['current_player']
-    initial_score = game_state['scores'][player]
 
     # Add the line
     if line_type == 'h':
