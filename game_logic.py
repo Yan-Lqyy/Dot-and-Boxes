@@ -48,7 +48,6 @@ def _get_max_indices(game_state):
     max_c_v = cols - 1
     return max_r_h, max_c_h, max_r_v, max_c_v
 
-
 def is_valid_line(game_state, line_type, r, c):
     """Checks if a line is within bounds and not already taken."""
     max_r_h, max_c_h, max_r_v, max_c_v = _get_max_indices(game_state)
@@ -69,9 +68,6 @@ def is_valid_line(game_state, line_type, r, c):
         return (r, c) not in game_state['vertical_lines']
     else:
         return False # Invalid line type
-
-# --- check_box_completion, make_move, switch_player, is_game_over, get_winner remain the same ---
-# (You can copy them from the previous version or keep them as they were)
 
 def check_box_completion(game_state, player):
     """
